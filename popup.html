@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scam Detector</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="panel">
+      <h1>Scam Detector</h1>
+      <p id="page-url" class="page-url">Waiting for active tab...</p>
+      <div class="api-settings">
+        <label class="field-label" for="api-base-input">API Base URL</label>
+        <div class="api-settings-row">
+          <input id="api-base-input" class="api-base-input" type="url" spellcheck="false" placeholder="https://scanner.seanforeman.org">
+          <button id="save-api-base-button" type="button" class="secondary-button compact-button">Save</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="scan-button" type="button">Scan This Page</button>
+        <button id="safe-site-button" type="button" class="secondary-button">I know this site is safe</button>
+        <label class="toggle toggle--card">
+          <input id="auto-scan-checkbox" type="checkbox">
+          <span>Auto-scan new pages in the background</span>
+        </label>
+        <label class="toggle">
+          <input id="rescan-checkbox" type="checkbox">
+          <span>Force rescan</span>
+        </label>
+      </div>
+      <section id="result" class="result hidden" aria-live="polite">
+        <div class="result-summary">
+          <div id="result-icon" class="result-icon" aria-hidden="true">👍</div>
+          <div class="result-copy">
+            <div id="result-prompt" class="result-prompt">Looks okay to browse.</div>
+            <div id="result-caption" class="result-caption">No strong scam indicators were triggered.</div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="label">Risk Score</span>
+          <span id="risk-score" class="value">-</span>
+        </div>
+        <div class="row">
+          <span class="label">Verdict</span>
+          <span id="verdict" class="value">-</span>
+        </div>
+        <div>
+          <div class="label">Reasons</div>
+          <ul id="reasons" class="reasons"></ul>
+        </div>
+      </section>
+      <p id="status" class="status"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,252 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f5f6f8 0%, #e8ecf1 100%);
+  color: #17202a;
+}
+
+.panel {
+  width: 340px;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.page-url {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #52606d;
+  word-break: break-word;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.api-settings {
+  margin-bottom: 12px;
+}
+
+.api-settings-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #52606d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.api-base-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #c9d6e3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #17202a;
+  font-size: 13px;
+}
+
+.api-base-input:disabled {
+  background: #eef2f7;
+  color: #6b7280;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #0b6bcb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-button {
+  background: #e7edf5;
+  color: #12324a;
+}
+
+.compact-button {
+  flex: 0 0 auto;
+  padding: 10px 12px;
+}
+
+button:disabled {
+  background: #8aa4bf;
+  cursor: wait;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.toggle--card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f7fafc;
+  border: 1px solid #d8e1ea;
+}
+
+.result {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid #d8e1ea;
+}
+
+.result-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.result-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  background: #e6f3e8;
+}
+
+.result-copy {
+  min-width: 0;
+}
+
+.result-prompt {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.result-caption {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #52606d;
+  line-height: 1.35;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #52606d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.result--low-risk {
+  border-color: #9ed8a8;
+  background: linear-gradient(180deg, #ffffff 0%, #f2fbf3 100%);
+}
+
+.result--suspicious {
+  border-color: #f3c27a;
+  background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+}
+
+.result--likely-scam {
+  border-color: #ef9a9a;
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f1 100%);
+}
+
+.value--low-risk {
+  color: #1f7a35;
+}
+
+.value--suspicious {
+  color: #b25b00;
+}
+
+.value--likely-scam {
+  color: #b42318;
+}
+
+.result--low-risk .result-summary {
+  background: rgba(232, 248, 236, 0.95);
+}
+
+.result--suspicious .result-summary {
+  background: rgba(255, 241, 224, 0.95);
+}
+
+.result--likely-scam .result-summary {
+  background: rgba(255, 229, 229, 0.95);
+}
+
+.result--low-risk .result-icon,
+.result--low-risk .result-prompt {
+  color: #1f7a35;
+}
+
+.result--suspicious .result-icon,
+.result--suspicious .result-prompt {
+  color: #b25b00;
+}
+
+.result--likely-scam .result-icon,
+.result--likely-scam .result-prompt {
+  color: #b42318;
+}
+
+.reasons {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.reasons li {
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.status {
+  min-height: 18px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #8a2b06;
+}
+
+.hidden {
+  display: none;
+}

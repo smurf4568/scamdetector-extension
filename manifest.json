@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Scam Detector",
+  "version": "0.1.0",
+  "description": "Scan the current page with the local scam detector API.",
+  "permissions": ["activeTab", "tabs", "scripting", "storage"],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Scam Detector",
+    "default_popup": "popup.html"
+  }
+}
