@@ -3,6 +3,7 @@ const apiBaseInput = document.getElementById("api-base-input");
 const saveApiBaseButton = document.getElementById("save-api-base-button");
 const scanButton = document.getElementById("scan-button");
 const safeSiteButton = document.getElementById("safe-site-button");
+const reportIssueButton = document.getElementById("report-issue-button");
 const autoScanCheckbox = document.getElementById("auto-scan-checkbox");
 const rescanCheckbox = document.getElementById("rescan-checkbox");
 const resultEl = document.getElementById("result");
@@ -20,6 +21,7 @@ let autoScanEnabled = false;
 let apiBase = "https://scanner.seanforeman.org";
 const RESULT_STATE_CLASSES = ["result--low-risk", "result--suspicious", "result--likely-scam"];
 const VALUE_STATE_CLASSES = ["value--low-risk", "value--suspicious", "value--likely-scam"];
+const ISSUE_URL_BASE = "https://github.com/smurf4568/scam_detector/issues/new";
 
 function setStatus(message) {
   statusEl.textContent = message || "";
@@ -104,6 +106,41 @@ function buildSafeSiteResult(hostname) {
 function setActionDisabled(disabled) {
   scanButton.disabled = disabled;
   safeSiteButton.disabled = disabled;
+}
+
+function buildIssueUrl() {
+  const issueBody = [
+    "## Issue summary",
+    "",
+    "Describe the problem you ran into.",
+    "",
+    "## Context",
+    "",
+    `- Page URL: ${activeTabUrl || "Not available"}`,
+    `- Extension page: ${window.location.href}`,
+    "",
+    "## Steps to reproduce",
+    "",
+    "1. Open the affected page.",
+    "2. Open the Scam Detector popup.",
+    "3. Describe what happened."
+  ].join("\n");
+
+  const params = new URLSearchParams({
+    title: "Extension issue report",
+    body: issueBody
+  });
+  return `${ISSUE_URL_BASE}?${params.toString()}`;
+}
+
+function reportIssue() {
+  chrome.tabs.create({ url: buildIssueUrl() }, () => {
+    if (chrome.runtime.lastError) {
+      setStatus("Could not open the GitHub issue form.");
+      return;
+    }
+    setStatus("Opened GitHub issue form for developer notification.");
+  });
 }
 
 function applyHighlights(tabId, highlights) {
@@ -426,6 +463,7 @@ chrome.runtime.onMessage.addListener((message) => {
 
 scanButton.addEventListener("click", () => requestScan(rescanCheckbox.checked));
 safeSiteButton.addEventListener("click", whitelistActiveSite);
+reportIssueButton.addEventListener("click", reportIssue);
 autoScanCheckbox.addEventListener("change", updateAutoScanMode);
 saveApiBaseButton.addEventListener("click", saveApiBase);
 
