@@ -4,12 +4,7 @@ This extension adds a popup button that sends the current tab URL to the API. It
 
 ## Load it in Chrome
 
-1. Start the API:
-
-```bash
-python -m uvicorn app.main:app --reload
-```
-
+Download to a local directory 
 2. Open Chrome and go to `chrome://extensions`.
 3. Turn on `Developer mode` using the toggle in the top-right corner.
 4. Click `Load unpacked`.
