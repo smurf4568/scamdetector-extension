@@ -32,6 +32,12 @@ h1 {
   gap: 10px;
 }
 
+.action-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .api-settings {
   margin-bottom: 12px;
 }
@@ -82,6 +88,24 @@ button {
 .secondary-button {
   background: #e7edf5;
   color: #12324a;
+}
+
+.report-issue-button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button-icon,
+.after-button-icon {
+  line-height: 1;
+}
+
+.after-button-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
 }
 
 .compact-button {
