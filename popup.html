@@ -10,13 +10,6 @@
     <main class="panel">
       <h1>Scam Detector</h1>
       <p id="page-url" class="page-url">Waiting for active tab...</p>
-      <div class="api-settings">
-        <label class="field-label" for="api-base-input">API Base URL</label>
-        <div class="api-settings-row">
-          <input id="api-base-input" class="api-base-input" type="url" spellcheck="false" placeholder="https://scanner.seanforeman.org">
-          <button id="save-api-base-button" type="button" class="secondary-button compact-button">Save</button>
-        </div>
-      </div>
       <div class="actions">
         <button id="scan-button" type="button">Scan This Page</button>
         <button id="safe-site-button" type="button" class="secondary-button">I know this site is safe</button>
@@ -58,6 +51,13 @@
         </div>
       </section>
       <p id="status" class="status"></p>
+      <div class="api-settings">
+        <label class="field-label" for="api-base-input">API Base URL</label>
+        <div class="api-settings-row">
+          <input id="api-base-input" class="api-base-input" type="url" spellcheck="false" placeholder="https://scanner.seanforeman.org">
+          <button id="save-api-base-button" type="button" class="secondary-button compact-button">Save</button>
+        </div>
+      </div>
     </main>
     <script src="popup.js"></script>
   </body>
