@@ -59,6 +59,39 @@ function getScannableUrl(rawUrl) {
   }
 }
 
+function getWebmailProvider(rawUrl) {
+  if (!rawUrl) {
+    return null;
+  }
+
+  try {
+    const hostname = new URL(rawUrl).hostname;
+    if (hostname === "mail.google.com") {
+      return "gmail";
+    }
+    if (hostname === "outlook.live.com" || hostname === "outlook.office.com") {
+      return "outlook";
+    }
+    if (hostname === "mail.yahoo.com") {
+      return "yahoo";
+    }
+    if (hostname === "app.proton.me") {
+      return "proton";
+    }
+  } catch (_error) {
+    return null;
+  }
+
+  return null;
+}
+
+function getEmailScanUrl(tab, extractedEmail) {
+  const provider = extractedEmail && extractedEmail.provider ? extractedEmail.provider : getWebmailProvider(tab && tab.url);
+  const subject = extractedEmail && extractedEmail.subject ? extractedEmail.subject : "";
+  const pageUrl = (extractedEmail && extractedEmail.page_url) || (tab && tab.url) || "";
+  return `email:${provider || "webmail"}:${pageUrl}:${subject}`;
+}
+
 function parseApiResponse(response) {
   return response.text().then((rawBody) => {
     if (!rawBody) {
@@ -286,7 +319,10 @@ async function setActionState(tabId, state) {
     await setIcon({ tabId, imageData: getIconImageData("scanning") });
     await setBadgeText({ tabId, text: "…" });
     await setBadgeBackgroundColor({ tabId, color: "#64748b" });
-    await setTitle({ tabId, title: "Scam Detector: scanning page" });
+    await setTitle({
+      tabId,
+      title: state.scan_type === "email" ? "Scam Detector: scanning email" : "Scam Detector: scanning page"
+    });
     return;
   }
 
@@ -440,6 +476,136 @@ async function scanTab(tabId, options = {}) {
   return scanPromise;
 }
 
+function sendTabMessage(tabId, message) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      resolve(response);
+    });
+  });
+}
+
+function executeScript(tabId, files) {
+  return new Promise((resolve, reject) => {
+    chrome.scripting.executeScript(
+      {
+        target: { tabId },
+        files
+      },
+      (results) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        resolve(results || []);
+      }
+    );
+  });
+}
+
+async function extractEmailFromTab(tabId) {
+  try {
+    return await sendTabMessage(tabId, { type: "EXTRACT_EMAIL_ON_SCREEN" });
+  } catch (_error) {
+    await executeScript(tabId, ["webmail-content.js"]);
+    return sendTabMessage(tabId, { type: "EXTRACT_EMAIL_ON_SCREEN" });
+  }
+}
+
+async function scanEmailTab(tabId, options = {}) {
+  const { rescan = false } = options;
+  const tab = await getTab(tabId);
+  const provider = getWebmailProvider(tab && tab.url);
+  if (!provider) {
+    throw new Error("This tab is not a supported webmail client.");
+  }
+
+  if (inFlightScans.has(tabId)) {
+    return inFlightScans.get(tabId);
+  }
+
+  const scanPromise = (async () => {
+    const currentState = await getTabState(tabId);
+    await updateStateAndBadge(tabId, {
+      ...(currentState || {}),
+      url: tab.url,
+      scan_type: "email",
+      status: "scanning",
+      error: null
+    });
+
+    const apiBase = await getApiBase();
+    const requestUrl = new URL(apiBase + "/scan/email");
+    if (rescan) {
+      requestUrl.searchParams.set("rescan", "true");
+    }
+
+    try {
+      const extracted = await extractEmailFromTab(tabId);
+      if (!extracted || !extracted.ok || !extracted.email) {
+        throw new Error((extracted && extracted.error) || "Could not read the email on screen.");
+      }
+
+      const email = extracted.email;
+      const response = await fetch(requestUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...email,
+          viewer_country: getViewerCountry()
+        })
+      });
+
+      const payload = await parseApiResponse(response);
+      if (!response.ok) {
+        throw new Error(payload.detail || payload.message || "Email scan failed.");
+      }
+
+      const nextState = {
+        url: tab.url,
+        scan_type: "email",
+        email_scan_url: getEmailScanUrl(tab, email),
+        email_provider: email.provider || provider,
+        email_subject: email.subject || "",
+        email_from: email.from_email || email.sender_text || "",
+        status: "complete",
+        risk_score: payload.risk_score,
+        verdict: payload.verdict,
+        reasons: payload.reasons || [],
+        highlights: payload.highlights || [],
+        scannedAt: Date.now(),
+        lastAutoOpenedUrl:
+          currentState && currentState.url === tab.url ? currentState.lastAutoOpenedUrl || null : null
+      };
+
+      await updateStateAndBadge(tabId, nextState);
+      return nextState;
+    } catch (error) {
+      const errorState = {
+        url: tab.url,
+        scan_type: "email",
+        status: "error",
+        error:
+          error.message === "Failed to fetch"
+            ? `Could not reach the API at ${apiBase}.`
+            : error.message
+      };
+      await updateStateAndBadge(tabId, errorState);
+      return errorState;
+    } finally {
+      inFlightScans.delete(tabId);
+    }
+  })();
+
+  inFlightScans.set(tabId, scanPromise);
+  return scanPromise;
+}
+
 async function getActiveTab() {
   const tabs = await queryTabs({ active: true, currentWindow: true });
   if (!tabs.length) {
@@ -454,6 +620,14 @@ function scheduleAutomaticScan(tabId, url) {
     pendingScans.delete(tabId);
     clearTabState(tabId).catch(() => undefined);
     setActionState(tabId, null).catch(() => undefined);
+    return;
+  }
+
+  if (getWebmailProvider(scannableUrl)) {
+    if (pendingScans.has(tabId)) {
+      clearTimeout(pendingScans.get(tabId));
+    }
+    pendingScans.delete(tabId);
     return;
   }
 
@@ -538,6 +712,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (!enabled) {
           return setActionState(tabId, null);
         }
+        if (getWebmailProvider(tab && tab.url)) {
+          return setActionState(tabId, null);
+        }
         return setActionState(tabId, {
           url: getScannableUrl(tab && tab.url),
           status: "scanning"
@@ -581,6 +758,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           id: activeTab.id,
           url: activeTab.url
         },
+        scanMode: getWebmailProvider(activeTab.url) ? "email" : "page",
         state: await getTabState(activeTab.id),
         autoScanEnabled: await getAutoScanEnabled()
       });
@@ -637,6 +815,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const state = await scanTab(activeTab.id, {
         rescan: Boolean(message.rescan),
         openPopupOnWarning: false
+      });
+      sendResponse({ ok: true, state });
+      return;
+    }
+
+    if (message.type === "SCAN_ACTIVE_EMAIL") {
+      const activeTab = await getActiveTab();
+      if (!activeTab || !getWebmailProvider(activeTab.url)) {
+        sendResponse({ ok: false, error: "Open a supported webmail tab before scanning an email." });
+        return;
+      }
+
+      const state = await scanEmailTab(activeTab.id, {
+        rescan: Boolean(message.rescan)
       });
       sendResponse({ ok: true, state });
       return;

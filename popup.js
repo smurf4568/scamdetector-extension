@@ -17,6 +17,7 @@ const statusEl = document.getElementById("status");
 
 let activeTabUrl = null;
 let activeTabId = null;
+let activeScanMode = "page";
 let autoScanEnabled = false;
 let apiBase = "https://scanner.seanforeman.org";
 const RESULT_STATE_CLASSES = ["result--low-risk", "result--suspicious", "result--likely-scam"];
@@ -38,31 +39,32 @@ function getVerdictClassName(verdict) {
   return "low-risk";
 }
 
-function getVerdictDisplay(verdictClass) {
+function getVerdictDisplay(verdictClass, scanType) {
+  const target = scanType === "email" ? "email" : "page";
   if (verdictClass === "likely-scam") {
     return {
       icon: "👎",
       prompt: "High risk. Avoid engaging without verification.",
-      caption: "Multiple warning signs were detected on this page."
+      caption: `Multiple warning signs were detected in this ${target}.`
     };
   }
   if (verdictClass === "suspicious") {
     return {
       icon: "✋",
       prompt: "Proceed carefully and double-check the claims.",
-      caption: "Some indicators suggest the page needs closer review."
+      caption: `Some indicators suggest the ${target} needs closer review.`
     };
   }
   return {
     icon: "👍",
-    prompt: "Looks okay to browse.",
+    prompt: scanType === "email" ? "Looks okay to read." : "Looks okay to browse.",
     caption: "No strong scam indicators were triggered."
   };
 }
 
 function renderResult(data) {
   const verdictClass = getVerdictClassName(data.verdict);
-  const verdictDisplay = getVerdictDisplay(verdictClass);
+  const verdictDisplay = getVerdictDisplay(verdictClass, data.scan_type || activeScanMode);
 
   resultEl.classList.remove(...RESULT_STATE_CLASSES);
   riskScoreEl.classList.remove(...VALUE_STATE_CLASSES);
@@ -105,7 +107,7 @@ function buildSafeSiteResult(hostname) {
 
 function setActionDisabled(disabled) {
   scanButton.disabled = disabled;
-  safeSiteButton.disabled = disabled;
+  safeSiteButton.disabled = disabled || activeScanMode === "email";
 }
 
 function buildIssueUrl() {
@@ -259,11 +261,19 @@ async function loadActiveTab() {
     const payload = await getActiveTabState();
     activeTabId = payload.tab.id;
     activeTabUrl = payload.tab.url;
+    activeScanMode = payload.scanMode || "page";
     autoScanEnabled = Boolean(payload.autoScanEnabled);
     autoScanCheckbox.checked = autoScanEnabled;
     pageUrlEl.textContent = activeTabUrl;
-    if (payload.state && payload.state.url === activeTabUrl) {
+    scanButton.textContent = activeScanMode === "email" ? "Scan Email On Screen" : "Scan This Page";
+    safeSiteButton.disabled = activeScanMode === "email";
+
+    if (payload.state && payload.state.url === activeTabUrl && (!payload.state.scan_type || payload.state.scan_type === activeScanMode)) {
       applyState(payload.state);
+    } else if (activeScanMode === "email") {
+      resultEl.classList.add("hidden");
+      setStatus("Open an email message, then scan the email on screen.");
+      setActionDisabled(false);
     } else if (autoScanEnabled) {
       setStatus("Scanning...");
       setActionDisabled(true);
@@ -349,7 +359,7 @@ function sendRuntimeMessage(message) {
 
 async function requestScan(rescan) {
   if (!activeTabUrl) {
-    setStatus("No page URL available to scan.");
+    setStatus(activeScanMode === "email" ? "No webmail tab available to scan." : "No page URL available to scan.");
     return;
   }
 
@@ -359,7 +369,7 @@ async function requestScan(rescan) {
 
   try {
     const response = await sendRuntimeMessage({
-      type: "SCAN_ACTIVE_TAB",
+      type: activeScanMode === "email" ? "SCAN_ACTIVE_EMAIL" : "SCAN_ACTIVE_TAB",
       rescan: Boolean(rescan)
     });
     applyState(response.state);
