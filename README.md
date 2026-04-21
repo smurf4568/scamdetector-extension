@@ -42,23 +42,4 @@ The extension now defaults to `https://scanner.seanforeman.org`. If you want to 
 
 In auto-scan mode, the extension scans newly loaded pages in the background, switches the toolbar icon and badge to green, yellow, or red based on the result, and automatically opens the popup when the verdict is `Suspicious` or `Likely Scam`. In on-demand mode, it only scans when you click `Scan This Page`.
 
-## Public Access
-
-To expose the API externally from a Mac Mini, use the Cloudflare Tunnel helper in this repo:
-
-```bash
-cd /path/to/scam_detector
-bash scripts/setup-cloudflare-tunnel.sh scam-detector scanner.example.com http://127.0.0.1:8000
-```
-
-After your public hostname is live, paste that URL into the extension popup as the `API Base URL`, for example:
-
-```text
-https://scanner.seanforeman.org
-```
-
-You can validate both the public hostname and the local origin with:
-
-```bash
-bash scripts/check-public-api.sh scanner.example.com http://127.0.0.1:8000
 ```
