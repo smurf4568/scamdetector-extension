@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Scam Detector",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scan the current page with the local scam detector API.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -23,6 +23,7 @@
         "https://mail.google.com/*",
         "https://outlook.live.com/*",
         "https://outlook.office.com/*",
+        "https://www.icloud.com/mail/*",
         "https://mail.yahoo.com/*",
         "https://app.proton.me/mail/*"
       ],

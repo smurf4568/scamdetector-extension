@@ -45,6 +45,35 @@ const WEBMAIL_PROVIDERS = [
     ]
   },
   {
+    id: "icloud",
+    hosts: ["www.icloud.com", "icloud.com"],
+    messageSelectors: [
+      "[role='main'] [role='article']",
+      "[role='main'] [aria-label*='message' i]",
+      "[role='main'] .message",
+      "[role='main']"
+    ],
+    subjectSelectors: [
+      "[role='main'] [role='heading'][aria-level='1']",
+      "[role='main'] h1",
+      "[role='main'] h2"
+    ],
+    senderSelectors: [
+      "[role='main'] [title*='@']",
+      "[role='main'] [aria-label*='@']",
+      "[role='main'] a[href^='mailto:']"
+    ],
+    dateSelectors: ["[role='main'] time", "[role='main'] [datetime]", "[role='main'] [title]"],
+    attachmentSelectors: [
+      "[role='main'] [aria-label*='attachment' i]",
+      "[role='main'] [title*='.pdf' i]",
+      "[role='main'] [title*='.zip' i]",
+      "[role='main'] [title*='.doc' i]",
+      "[role='main'] [title*='.xls' i]",
+      "[role='main'] [title*='.exe' i]"
+    ]
+  },
+  {
     id: "yahoo",
     hosts: ["mail.yahoo.com"],
     messageSelectors: [

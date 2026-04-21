@@ -72,6 +72,9 @@ function getWebmailProvider(rawUrl) {
     if (hostname === "outlook.live.com" || hostname === "outlook.office.com") {
       return "outlook";
     }
+    if (hostname === "www.icloud.com" || hostname === "icloud.com") {
+      return "icloud";
+    }
     if (hostname === "mail.yahoo.com") {
       return "yahoo";
     }
