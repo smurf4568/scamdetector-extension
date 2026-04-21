@@ -48,29 +48,52 @@ const WEBMAIL_PROVIDERS = [
     id: "icloud",
     hosts: ["www.icloud.com", "icloud.com"],
     messageSelectors: [
-      "[role='main'] [role='article']",
-      "[role='main'] [aria-label*='message' i]",
-      "[role='main'] .message",
-      "[role='main']"
+      "[data-testid='thread-detail-pane'] [role='article']",
+      "[data-testid='thread-detail-pane'] [aria-label*='message' i]",
+      "[data-testid='thread-detail-pane'] .message",
+      "[data-testid='thread-detail-pane']",
+      ".thread-detail-pane [role='article']",
+      ".thread-detail-pane [aria-label*='message' i]",
+      ".thread-detail-pane .message",
+      ".thread-detail-pane"
     ],
     subjectSelectors: [
-      "[role='main'] [role='heading'][aria-level='1']",
-      "[role='main'] h1",
-      "[role='main'] h2"
+      "[data-testid='thread-detail-pane'] [role='heading'][aria-level='1']",
+      "[data-testid='thread-detail-pane'] h1",
+      "[data-testid='thread-detail-pane'] h2",
+      ".thread-detail-pane [role='heading'][aria-level='1']",
+      ".thread-detail-pane h1",
+      ".thread-detail-pane h2"
     ],
     senderSelectors: [
-      "[role='main'] [title*='@']",
-      "[role='main'] [aria-label*='@']",
-      "[role='main'] a[href^='mailto:']"
+      "[data-testid='thread-detail-pane'] [title*='@']",
+      "[data-testid='thread-detail-pane'] [aria-label*='@']",
+      "[data-testid='thread-detail-pane'] a[href^='mailto:']",
+      ".thread-detail-pane [title*='@']",
+      ".thread-detail-pane [aria-label*='@']",
+      ".thread-detail-pane a[href^='mailto:']"
     ],
-    dateSelectors: ["[role='main'] time", "[role='main'] [datetime]", "[role='main'] [title]"],
+    dateSelectors: [
+      "[data-testid='thread-detail-pane'] time",
+      "[data-testid='thread-detail-pane'] [datetime]",
+      "[data-testid='thread-detail-pane'] [title]",
+      ".thread-detail-pane time",
+      ".thread-detail-pane [datetime]",
+      ".thread-detail-pane [title]"
+    ],
     attachmentSelectors: [
-      "[role='main'] [aria-label*='attachment' i]",
-      "[role='main'] [title*='.pdf' i]",
-      "[role='main'] [title*='.zip' i]",
-      "[role='main'] [title*='.doc' i]",
-      "[role='main'] [title*='.xls' i]",
-      "[role='main'] [title*='.exe' i]"
+      "[data-testid='thread-detail-pane'] [aria-label*='attachment' i]",
+      "[data-testid='thread-detail-pane'] [title*='.pdf' i]",
+      "[data-testid='thread-detail-pane'] [title*='.zip' i]",
+      "[data-testid='thread-detail-pane'] [title*='.doc' i]",
+      "[data-testid='thread-detail-pane'] [title*='.xls' i]",
+      "[data-testid='thread-detail-pane'] [title*='.exe' i]",
+      ".thread-detail-pane [aria-label*='attachment' i]",
+      ".thread-detail-pane [title*='.pdf' i]",
+      ".thread-detail-pane [title*='.zip' i]",
+      ".thread-detail-pane [title*='.doc' i]",
+      ".thread-detail-pane [title*='.xls' i]",
+      ".thread-detail-pane [title*='.exe' i]"
     ]
   },
   {
@@ -161,14 +184,24 @@ function getVisibleMessageRoot(provider) {
   for (const selector of provider.messageSelectors || []) {
     const nodes = Array.from(document.querySelectorAll(selector));
     const visibleNodes = nodes
-      .filter((node) => {
+      .map((node) => {
         const rect = node.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0 && normalizeText(node.textContent).length > 20;
+        return {
+          node,
+          rect,
+          textLength: normalizeText(node.textContent).length
+        };
       })
-      .sort((a, b) => normalizeText(b.textContent).length - normalizeText(a.textContent).length);
+      .filter((item) => item.rect.width > 0 && item.rect.height > 0 && item.textLength > 20)
+      .sort((a, b) => {
+        if (provider.id === "icloud") {
+          return b.rect.right - a.rect.right || b.textLength - a.textLength;
+        }
+        return b.textLength - a.textLength;
+      });
 
     if (visibleNodes.length) {
-      return visibleNodes[0];
+      return visibleNodes[0].node;
     }
   }
   return document.body;
