@@ -24,10 +24,12 @@
         "https://outlook.live.com/*",
         "https://outlook.office.com/*",
         "https://www.icloud.com/mail/*",
+        "https://www.icloud.com/applications/mail2/*",
         "https://mail.yahoo.com/*",
         "https://app.proton.me/mail/*"
       ],
       "js": ["webmail-content.js"],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ],

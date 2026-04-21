@@ -47,53 +47,54 @@ const WEBMAIL_PROVIDERS = [
   {
     id: "icloud",
     hosts: ["www.icloud.com", "icloud.com"],
+    requireMessageRoot: true,
     messageSelectors: [
-      "[data-testid='thread-detail-pane'] [role='article']",
-      "[data-testid='thread-detail-pane'] [aria-label*='message' i]",
-      "[data-testid='thread-detail-pane'] .message",
-      "[data-testid='thread-detail-pane']",
-      ".thread-detail-pane [role='article']",
-      ".thread-detail-pane [aria-label*='message' i]",
-      ".thread-detail-pane .message",
-      ".thread-detail-pane"
+      "[data-testid*='thread-detail-pane'] [role='article']",
+      "[data-testid*='thread-detail-pane'] [aria-label*='message' i]",
+      "[data-testid*='thread-detail-pane'] [class*='message']",
+      "[data-testid*='thread-detail-pane']",
+      "[class*='thread-detail-pane'] [role='article']",
+      "[class*='thread-detail-pane'] [aria-label*='message' i]",
+      "[class*='thread-detail-pane'] [class*='message']",
+      "[class*='thread-detail-pane']"
     ],
     subjectSelectors: [
-      "[data-testid='thread-detail-pane'] [role='heading'][aria-level='1']",
-      "[data-testid='thread-detail-pane'] h1",
-      "[data-testid='thread-detail-pane'] h2",
-      ".thread-detail-pane [role='heading'][aria-level='1']",
-      ".thread-detail-pane h1",
-      ".thread-detail-pane h2"
+      "[data-testid*='thread-detail-pane'] [role='heading'][aria-level='1']",
+      "[data-testid*='thread-detail-pane'] h1",
+      "[data-testid*='thread-detail-pane'] h2",
+      "[class*='thread-detail-pane'] [role='heading'][aria-level='1']",
+      "[class*='thread-detail-pane'] h1",
+      "[class*='thread-detail-pane'] h2"
     ],
     senderSelectors: [
-      "[data-testid='thread-detail-pane'] [title*='@']",
-      "[data-testid='thread-detail-pane'] [aria-label*='@']",
-      "[data-testid='thread-detail-pane'] a[href^='mailto:']",
-      ".thread-detail-pane [title*='@']",
-      ".thread-detail-pane [aria-label*='@']",
-      ".thread-detail-pane a[href^='mailto:']"
+      "[data-testid*='thread-detail-pane'] [title*='@']",
+      "[data-testid*='thread-detail-pane'] [aria-label*='@']",
+      "[data-testid*='thread-detail-pane'] a[href^='mailto:']",
+      "[class*='thread-detail-pane'] [title*='@']",
+      "[class*='thread-detail-pane'] [aria-label*='@']",
+      "[class*='thread-detail-pane'] a[href^='mailto:']"
     ],
     dateSelectors: [
-      "[data-testid='thread-detail-pane'] time",
-      "[data-testid='thread-detail-pane'] [datetime]",
-      "[data-testid='thread-detail-pane'] [title]",
-      ".thread-detail-pane time",
-      ".thread-detail-pane [datetime]",
-      ".thread-detail-pane [title]"
+      "[data-testid*='thread-detail-pane'] time",
+      "[data-testid*='thread-detail-pane'] [datetime]",
+      "[data-testid*='thread-detail-pane'] [title]",
+      "[class*='thread-detail-pane'] time",
+      "[class*='thread-detail-pane'] [datetime]",
+      "[class*='thread-detail-pane'] [title]"
     ],
     attachmentSelectors: [
-      "[data-testid='thread-detail-pane'] [aria-label*='attachment' i]",
-      "[data-testid='thread-detail-pane'] [title*='.pdf' i]",
-      "[data-testid='thread-detail-pane'] [title*='.zip' i]",
-      "[data-testid='thread-detail-pane'] [title*='.doc' i]",
-      "[data-testid='thread-detail-pane'] [title*='.xls' i]",
-      "[data-testid='thread-detail-pane'] [title*='.exe' i]",
-      ".thread-detail-pane [aria-label*='attachment' i]",
-      ".thread-detail-pane [title*='.pdf' i]",
-      ".thread-detail-pane [title*='.zip' i]",
-      ".thread-detail-pane [title*='.doc' i]",
-      ".thread-detail-pane [title*='.xls' i]",
-      ".thread-detail-pane [title*='.exe' i]"
+      "[data-testid*='thread-detail-pane'] [aria-label*='attachment' i]",
+      "[data-testid*='thread-detail-pane'] [title*='.pdf' i]",
+      "[data-testid*='thread-detail-pane'] [title*='.zip' i]",
+      "[data-testid*='thread-detail-pane'] [title*='.doc' i]",
+      "[data-testid*='thread-detail-pane'] [title*='.xls' i]",
+      "[data-testid*='thread-detail-pane'] [title*='.exe' i]",
+      "[class*='thread-detail-pane'] [aria-label*='attachment' i]",
+      "[class*='thread-detail-pane'] [title*='.pdf' i]",
+      "[class*='thread-detail-pane'] [title*='.zip' i]",
+      "[class*='thread-detail-pane'] [title*='.doc' i]",
+      "[class*='thread-detail-pane'] [title*='.xls' i]",
+      "[class*='thread-detail-pane'] [title*='.exe' i]"
     ]
   },
   {
@@ -149,6 +150,16 @@ function getProvider() {
   ) || null;
 }
 
+function getProviderDocument(provider) {
+  if (provider && provider.id === "icloud") {
+    const iframe = document.querySelector("iframe[data-name='mail2'], iframe[src*='/applications/mail2/']");
+    if (iframe && iframe.contentDocument) {
+      return iframe.contentDocument;
+    }
+  }
+  return document;
+}
+
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -180,9 +191,61 @@ function queryFirstAttribute(selectors, attributes, root = document) {
   return "";
 }
 
-function getVisibleMessageRoot(provider) {
+function isLikelyIcloudMessagePane(item, viewportWidth = 0) {
+  const text = normalizeText(item.node.textContent);
+  const lowerText = text.toLowerCase();
+  const hasMessageSignal =
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(text) ||
+    item.node.querySelector("a[href^='mailto:'], time, [datetime], [title*='@'], [aria-label*='@']");
+  const hasMailboxListSignal = /\b(inbox|archive|junk|trash|sent|drafts|flagged|all mail|delete|reply all|compose)\b/i.test(text);
+  const isRightPane = !viewportWidth || item.rect.left > viewportWidth * 0.45;
+  return Boolean(
+    hasMessageSignal &&
+    isRightPane &&
+    item.textLength > 40 &&
+    item.rect.width > 260 &&
+    item.rect.height > 160 &&
+    !hasMailboxListSignal &&
+    !lowerText.includes("cryptocurrency")
+  );
+}
+
+function getIcloudHeuristicMessageRoot(rootDocument = document) {
+  const view = rootDocument.defaultView || window;
+  const viewportWidth =
+    view.innerWidth ||
+    rootDocument.documentElement.clientWidth ||
+    window.innerWidth ||
+    document.documentElement.clientWidth ||
+    0;
+  const nodes = Array.from(rootDocument.querySelectorAll(
+    [
+      "[role='main'] [role='region']",
+      "[role='main'] [role='group']",
+      "[role='main'] [role='article']",
+      "[role='main'] section",
+      "[role='main'] div"
+    ].join(",")
+  ));
+  const candidates = nodes
+    .map((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        node,
+        rect,
+        textLength: normalizeText(node.textContent).length
+      };
+    })
+    .filter((item) => item.rect.width > 0 && item.rect.height > 0 && isLikelyIcloudMessagePane(item, viewportWidth))
+    .sort((a, b) => b.rect.right - a.rect.right || b.textLength - a.textLength);
+
+  return candidates.find((item) => !viewportWidth || item.rect.left > viewportWidth * 0.45)?.node ||
+    (candidates.length ? candidates[0].node : null);
+}
+
+function getVisibleMessageRoot(provider, rootDocument = document) {
   for (const selector of provider.messageSelectors || []) {
-    const nodes = Array.from(document.querySelectorAll(selector));
+    const nodes = Array.from(rootDocument.querySelectorAll(selector));
     const visibleNodes = nodes
       .map((node) => {
         const rect = node.getBoundingClientRect();
@@ -204,7 +267,10 @@ function getVisibleMessageRoot(provider) {
       return visibleNodes[0].node;
     }
   }
-  return document.body;
+  if (provider.id === "icloud") {
+    return getIcloudHeuristicMessageRoot(rootDocument);
+  }
+  return provider.requireMessageRoot ? null : rootDocument.body;
 }
 
 function parseEmailAddress(value) {
@@ -317,11 +383,19 @@ function extractEmailOnScreen() {
     };
   }
 
-  const root = getVisibleMessageRoot(provider);
+  const providerDocument = getProviderDocument(provider);
+  const root = getVisibleMessageRoot(provider, providerDocument);
+  if (!root) {
+    return {
+      ok: false,
+      error: "Open an email message before scanning."
+    };
+  }
+
   const senderRaw =
     queryFirstAttribute(provider.senderSelectors, ["email", "title", "aria-label"], root) ||
     queryFirstText(provider.senderSelectors, root) ||
-    queryFirstAttribute(provider.senderSelectors, ["email", "title", "aria-label"]);
+    queryFirstAttribute(provider.senderSelectors, ["email", "title", "aria-label"], providerDocument);
   const fromEmail = parseEmailAddress(senderRaw);
   const fromName = parseDisplayName(senderRaw, fromEmail);
   const bodyText = trimBodyText(root ? root.textContent : "");
@@ -337,7 +411,7 @@ function extractEmailOnScreen() {
     ok: true,
     email: {
       provider: provider.id,
-      subject: queryFirstText(provider.subjectSelectors) || document.title,
+      subject: queryFirstText(provider.subjectSelectors, providerDocument) || providerDocument.title || document.title,
       from_name: fromName,
       from_email: fromEmail,
       sender_text: senderRaw,
