@@ -171,14 +171,14 @@ function getIconPalette(iconState) {
   if (iconState === "low-risk") {
     return {
       background: "#1f7a35",
-      border: "#14532d",
+      border: "#0f4a27",
       text: "#f4fff6"
     };
   }
   if (iconState === "suspicious") {
     return {
-      background: "#b25b00",
-      border: "#7c3d00",
+      background: "#d88a16",
+      border: "#8a4b05",
       text: "#fff8ed"
     };
   }
@@ -197,9 +197,9 @@ function getIconPalette(iconState) {
     };
   }
   return {
-    background: "#0b6bcb",
-    border: "#084b8a",
-    text: "#eef6ff"
+    background: "#ffffff",
+    border: "#64748b",
+    text: "#1f2937"
   };
 }
 
@@ -207,28 +207,45 @@ function drawIconImageData(size, iconState) {
   const palette = getIconPalette(iconState);
   const canvas = new OffscreenCanvas(size, size);
   const context = canvas.getContext("2d");
-  const radius = size * 0.22;
+  const lineWidth = Math.max(1, Math.round(size * 0.07));
+  const points = [
+    [size * 0.5, lineWidth * 0.9],
+    [size * 0.86, size * 0.16],
+    [size * 0.8, size * 0.57],
+    [size * 0.5, size * 0.93],
+    [size * 0.2, size * 0.57],
+    [size * 0.14, size * 0.16]
+  ];
 
   context.clearRect(0, 0, size, size);
+  context.lineJoin = "round";
+  context.lineCap = "round";
+  context.shadowColor = "rgba(15, 23, 42, 0.22)";
+  context.shadowBlur = Math.max(1, size * 0.06);
+  context.shadowOffsetY = Math.max(1, size * 0.03);
   context.fillStyle = palette.background;
   context.strokeStyle = palette.border;
-  context.lineWidth = Math.max(1, Math.round(size * 0.08));
+  context.lineWidth = lineWidth;
   context.beginPath();
-  context.roundRect(
-    context.lineWidth / 2,
-    context.lineWidth / 2,
-    size - context.lineWidth,
-    size - context.lineWidth,
-    radius
-  );
+  points.forEach(([x, y], index) => {
+    if (index === 0) {
+      context.moveTo(x, y);
+      return;
+    }
+    context.lineTo(x, y);
+  });
+  context.closePath();
   context.fill();
   context.stroke();
 
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetY = 0;
   context.fillStyle = palette.text;
-  context.font = `700 ${Math.round(size * 0.58)}px sans-serif`;
+  context.font = `800 ${Math.round(size * 0.32)}px Arial, sans-serif`;
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillText("S", size / 2, size / 2 + size * 0.03);
+  context.fillText("SD", size / 2, size * 0.48);
 
   return context.getImageData(0, 0, size, size);
 }
@@ -240,7 +257,9 @@ function getIconImageData(iconState) {
 
   const imageData = {
     16: drawIconImageData(16, iconState),
-    32: drawIconImageData(32, iconState)
+    32: drawIconImageData(32, iconState),
+    48: drawIconImageData(48, iconState),
+    128: drawIconImageData(128, iconState)
   };
   iconCache.set(iconState, imageData);
   return imageData;

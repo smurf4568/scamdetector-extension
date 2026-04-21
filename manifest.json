@@ -3,6 +3,12 @@
   "name": "Scam Detector",
   "version": "0.1.0",
   "description": "Scan the current page with the local scam detector API.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": ["activeTab", "tabs", "scripting", "storage"],
   "host_permissions": [
     "http://*/*",
@@ -26,6 +32,12 @@
   ],
   "action": {
     "default_title": "Scam Detector",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
     "default_popup": "popup.html"
   }
 }
