@@ -9,7 +9,14 @@ const WEBMAIL_PROVIDERS = [
     ],
     subjectSelectors: ["h2.hP", "div[role='main'] h2"],
     senderSelectors: ["span[email]", ".gD[email]", "span.gD"],
-    dateSelectors: ["span.g3", "span[title][alt]"]
+    dateSelectors: ["span.g3", "span[title][alt]"],
+    attachmentSelectors: [
+      ".aQH span[title]",
+      ".aZo[download_url]",
+      ".aQy",
+      "span[aria-label*='Attachment']",
+      "div[aria-label*='Attachment']"
+    ]
   },
   {
     id: "outlook",
@@ -27,7 +34,15 @@ const WEBMAIL_PROVIDERS = [
       "div[role='main'] [title*='@']",
       "div[role='main'] span[title*='@']"
     ],
-    dateSelectors: ["div[role='main'] time", "div[role='main'] [title]"]
+    dateSelectors: ["div[role='main'] time", "div[role='main'] [title]"],
+    attachmentSelectors: [
+      "div[role='main'] [aria-label*='attachment']",
+      "div[role='main'] [title*='.pdf']",
+      "div[role='main'] [title*='.zip']",
+      "div[role='main'] [title*='.doc']",
+      "div[role='main'] [title*='.xls']",
+      "div[role='main'] [title*='.exe']"
+    ]
   },
   {
     id: "yahoo",
@@ -46,7 +61,12 @@ const WEBMAIL_PROVIDERS = [
       "span[data-test-id='message-from']",
       "div[data-test-id='message-view'] [title*='@']"
     ],
-    dateSelectors: ["time", "div[data-test-id='message-view'] [title]"]
+    dateSelectors: ["time", "div[data-test-id='message-view'] [title]"],
+    attachmentSelectors: [
+      "div[data-test-id*='attachment']",
+      "button[data-test-id*='attachment']",
+      "[aria-label*='attachment']"
+    ]
   },
   {
     id: "proton",
@@ -61,7 +81,12 @@ const WEBMAIL_PROVIDERS = [
       "[data-testid='message-header:sender']",
       "[title*='@']"
     ],
-    dateSelectors: ["time", "[data-testid='message-header:date']"]
+    dateSelectors: ["time", "[data-testid='message-header:date']"],
+    attachmentSelectors: [
+      "[data-testid*='attachment']",
+      ".attachment",
+      "[aria-label*='attachment']"
+    ]
   }
 ];
 
@@ -156,6 +181,64 @@ function extractLinks(root) {
     .slice(0, 40);
 }
 
+function parseFilename(value) {
+  const text = normalizeText(value);
+  if (!text) {
+    return "";
+  }
+  const match = text.match(/[^\s"'<>/\\]+\.(?:7z|ace|app|bat|cmd|com|docm|dotm|exe|gz|hta|html?|img|iso|jar|js|jse|lnk|msi|pdf|potm|ppam|ppsm|pptm|rar|scr|tar|vbe|vbs|wsf|xlam|xlsm|xltm|zip)\b/i);
+  return match ? match[0] : "";
+}
+
+function extractAttachmentFromNode(node) {
+  const candidates = [
+    node.getAttribute("download"),
+    node.getAttribute("title"),
+    node.getAttribute("aria-label"),
+    node.getAttribute("data-tooltip"),
+    node.getAttribute("data-filename"),
+    node.getAttribute("download_url"),
+    node.textContent
+  ];
+  for (const candidate of candidates) {
+    const filename = parseFilename(candidate);
+    if (filename) {
+      return {
+        filename,
+        content_type: "",
+        size_bytes: 0
+      };
+    }
+  }
+  return null;
+}
+
+function extractAttachments(provider, root) {
+  const seen = new Set();
+  const selectors = [
+    ...(provider.attachmentSelectors || []),
+    "a[download]",
+    "a[href][title]",
+    "[aria-label*='attachment' i]",
+    "[title*='.pdf' i]",
+    "[title*='.zip' i]",
+    "[title*='.doc' i]",
+    "[title*='.xls' i]",
+    "[title*='.exe' i]"
+  ];
+  return selectors
+    .flatMap((selector) => Array.from((root || document).querySelectorAll(selector)))
+    .map(extractAttachmentFromNode)
+    .filter((attachment) => {
+      if (!attachment || seen.has(attachment.filename.toLowerCase())) {
+        return false;
+      }
+      seen.add(attachment.filename.toLowerCase());
+      return true;
+    })
+    .slice(0, 20);
+}
+
 function trimBodyText(text) {
   const normalized = normalizeText(text);
   const forwardedIndex = normalized.search(/\b(forwarded message|original message)\b/i);
@@ -202,6 +285,7 @@ function extractEmailOnScreen() {
         queryFirstText(provider.dateSelectors, root),
       body_text: bodyText,
       links: extractLinks(root),
+      attachments: extractAttachments(provider, root),
       page_url: window.location.href
     }
   };
