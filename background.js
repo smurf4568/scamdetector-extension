@@ -207,9 +207,16 @@ function getIconPalette(iconState) {
 }
 
 function drawIconImageData(size, iconState) {
+  if (typeof OffscreenCanvas === "undefined") {
+    throw new Error("OffscreenCanvas is unavailable.");
+  }
+
   const palette = getIconPalette(iconState);
   const canvas = new OffscreenCanvas(size, size);
   const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Could not create a 2d context for the extension icon.");
+  }
   const lineWidth = Math.max(1, Math.round(size * 0.07));
   const points = [
     [size * 0.5, lineWidth * 0.9],
@@ -258,14 +265,39 @@ function getIconImageData(iconState) {
     return iconCache.get(iconState);
   }
 
-  const imageData = {
-    16: drawIconImageData(16, iconState),
-    32: drawIconImageData(32, iconState),
-    48: drawIconImageData(48, iconState),
-    128: drawIconImageData(128, iconState)
-  };
+  let imageData = null;
+  try {
+    imageData = {
+      16: drawIconImageData(16, iconState),
+      32: drawIconImageData(32, iconState),
+      48: drawIconImageData(48, iconState),
+      128: drawIconImageData(128, iconState)
+    };
+  } catch (_error) {
+    imageData = null;
+  }
+
   iconCache.set(iconState, imageData);
   return imageData;
+}
+
+function getFallbackIconPaths() {
+  return {
+    16: "icons/icon-16.png",
+    32: "icons/icon-32.png",
+    48: "icons/icon-48.png",
+    128: "icons/icon-128.png"
+  };
+}
+
+async function setActionIcon(tabId, iconState) {
+  const imageData = getIconImageData(iconState);
+  if (imageData) {
+    await setIcon({ tabId, imageData });
+    return;
+  }
+
+  await setIcon({ tabId, path: getFallbackIconPaths() });
 }
 
 async function getStateMap() {
@@ -331,14 +363,14 @@ async function broadcastTabUpdate(tabId) {
 
 async function setActionState(tabId, state) {
   if (!state || !state.url) {
-    await setIcon({ tabId, imageData: getIconImageData("default") });
+    await setActionIcon(tabId, "default");
     await setBadgeText({ tabId, text: "" });
     await setTitle({ tabId, title: "Scam Detector" });
     return;
   }
 
   if (state.status === "scanning") {
-    await setIcon({ tabId, imageData: getIconImageData("scanning") });
+    await setActionIcon(tabId, "scanning");
     await setBadgeText({ tabId, text: "…" });
     await setBadgeBackgroundColor({ tabId, color: "#64748b" });
     await setTitle({
@@ -349,7 +381,7 @@ async function setActionState(tabId, state) {
   }
 
   if (state.status === "error") {
-    await setIcon({ tabId, imageData: getIconImageData("scanning") });
+    await setActionIcon(tabId, "scanning");
     await setBadgeText({ tabId, text: "!" });
     await setBadgeBackgroundColor({ tabId, color: "#64748b" });
     await setTitle({ tabId, title: `Scam Detector: ${state.error || "scan failed"}` });
@@ -363,7 +395,7 @@ async function setActionState(tabId, state) {
     "likely-scam": "#b42318"
   };
 
-  await setIcon({ tabId, imageData: getIconImageData(verdictClass) });
+  await setActionIcon(tabId, verdictClass);
   await setBadgeText({ tabId, text: "S" });
   await setBadgeBackgroundColor({ tabId, color: colorByVerdict[verdictClass] || "#64748b" });
   await setTitle({
